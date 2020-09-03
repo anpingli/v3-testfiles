@@ -8,14 +8,24 @@ metadata:
 data:
   rsyslog.conf: |+
     global(processInternalMessages="on")
-    module(load="imptcp")
+    module(load="imtcp" MaxSessions="500")
     module(load="imudp" TimeRequery="500")
 
-    input(type="imptcp" port="514")
+    input(type="imtcp" port="514")
     input(type="imudp" port="514")
+    #*.*  /var/log/custom/all.log
     
+    # 4.5 and prior. 
     :programname, contains, "kubernetes.var.log.containers" {
       if $msg contains "namespace_name=openshift" or $msg contains "namespace_name=default" or $msg contains "namespace_name=kube" then /var/log/custom/infra-container.log
       if not ($msg contains "namespace_name=openshift" or $msg contains "namespace_name=default" or $msg contains "namespace_name=kube") then /var/log/custom/app-container.log
     }
     :programname, !contains, "kubernetes.var.log.containers" /var/log/custom/infra.log
+
+    # 4.6 syslog forward
+    #:msg, contains, "docker"{
+    #  if $msg contains "viaq_index_name:infra-write" then /var/log/custom/infra-container.log
+    #  if $msg contains "viaq_index_name:app-write" then /var/log/custom/app-container.log
+    #}
+    #:msg, contains, "_STREAM_ID" /var/log/custom/infra.log
+    #:msg, contains, "viaq_index_name:audit-write" /var/log/custom/audit.log
